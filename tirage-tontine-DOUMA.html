@@ -120,9 +120,7 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
   <!-- ACCUEIL (pas de tirage en cours) -->
   <main id="s-start" class="hidden">
     <div class="card">
-      <!-- Badge admin si connecté -->
       <div id="admin-badge" class="admin-badge hidden">🔐 Mode administrateur</div>
-      <!-- Formulaire lancer tirage — visible pour tous -->
       <button class="btn-p" id="launch-toggle-btn">🎯 Lancer un tirage</button>
       <div id="launch-form" class="hidden" style="margin-top:14px;border-top:1px dashed rgba(255,255,255,.1);padding-top:14px;">
         <label>Nombre de membres participants</label>
@@ -130,11 +128,9 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
         <p class="err hidden" id="n-err">Entrez un nombre entre 2 et 30.</p>
         <button class="btn-g" id="n-ok" style="margin-top:8px;">Confirmer et afficher les images</button>
       </div>
-      <!-- Bouton admin -->
       <button class="btn-admin" id="admin-login-btn">🔐 Accès administrateur</button>
       <button class="btn-ghost hidden" id="admin-logout" style="margin-top:8px;font-size:13px;padding:10px;">Se déconnecter (admin)</button>
     </div>
-    <!-- Historique -->
     <div class="hs">
       <div class="hs-title">Historique des tirages</div>
       <div id="hs-list"><div class="hempty">Aucun tirage enregistré.</div></div>
@@ -169,7 +165,8 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
       <button class="btn-ghost" id="copy-btn" style="margin-top:8px;">Copier le résultat</button>
       <p style="color:var(--gold);font-size:13px;margin-top:6px;min-height:16px;" id="copy-fb"></p>
     </div>
-    <button class="btn-end hidden" id="end-bottom" style="width:100%;">Mettre fin au tirage</button>
+    <!-- ✅ FIX : bouton toujours visible pour l'admin, rendu dans renderDone() -->
+    <button class="btn-end hidden" id="end-bottom" style="width:100%;margin-top:6px;">Mettre fin au tirage</button>
     <p class="tip">Ce résultat est conservé dans l'historique.</p>
   </main>
 
@@ -272,7 +269,10 @@ const ANIMALS = [
 ];
 
 let db, session={status:'idle'}, myEntry=null, modalOpen=false, pendingImg=null;
-let isAdmin = false;
+
+// ✅ FIX : isAdmin persisté en sessionStorage pour survivre aux re-renders Firestore
+// (sessionStorage = dure le temps de l'onglet ouvert, s'efface si on ferme l'onglet)
+let isAdmin = sessionStorage.getItem('douma_admin') === '1';
 
 function shuffle(a){
   const b=a.slice();
@@ -313,7 +313,7 @@ function renderStart(){
   isAdmin ? show($('admin-logout')) : hide($('admin-logout'));
   isAdmin ? hide($('admin-login-btn')) : show($('admin-login-btn'));
   isAdmin ? show($('del-all-btn')) : hide($('del-all-btn'));
-  hide($('launch-form')); // replié par défaut
+  hide($('launch-form'));
   loadHist();
 }
 
@@ -321,13 +321,11 @@ function renderPick(s){
   $('p-count').textContent=(s.basket||[]).length;
   $('p-total').textContent=s.totalSlots;
 
-  // badges et boutons selon rôle
   if(isAdmin){
     show($('admin-pick-badge')); show($('end-top'));
     hide($('my-banner'));
   } else {
     hide($('admin-pick-badge')); hide($('end-top'));
-    // badge si membre déjà dans le panier
     const joined = myEntry && myEntry.sid===s.sid;
     if(joined){
       const img=(s.images||[]).find(i=>i.id===myEntry.imgId);
@@ -338,7 +336,6 @@ function renderPick(s){
     }
   }
 
-  // grille
   const joined = !isAdmin && myEntry && myEntry.sid===s.sid;
   $('img-grid').innerHTML='';
   (s.images||[]).forEach(img=>{
@@ -350,7 +347,6 @@ function renderPick(s){
     $('img-grid').appendChild(c);
   });
 
-  // panier
   $('pan-box').innerHTML='';
   const b=s.basket||[];
   if(!b.length){$('pan-box').innerHTML='<div class="pan-empty">Le panier est encore vide…</div>';}
@@ -363,7 +359,6 @@ function renderPick(s){
   });
 
   const full=b.length>=s.totalSlots&&s.totalSlots>0;
-  // Mélanger visible pour tous quand panier plein
   full ? show($('mix-btn')) : hide($('mix-btn'));
 }
 
@@ -376,8 +371,12 @@ function renderDone(s){
     row.querySelector('.fname').textContent=r.name;
     $('final-list').appendChild(row);
   });
-  // Bouton fin : admin seulement
-  isAdmin ? show($('end-bottom')) : hide($('end-bottom'));
+  // ✅ FIX : bouton "Mettre fin" affiché pour l'admin dans l'écran résultats
+  if(isAdmin){
+    show($('end-bottom'));
+  } else {
+    hide($('end-bottom'));
+  }
 }
 
 // ---------------------------------------------------------------- FIRESTORE
@@ -425,7 +424,6 @@ $('m-ok').onclick=async()=>{
   d.basket=d.basket||[];
   d.basket.push({imgId:pendingImg,name,t:Date.now()});
   await sesRef().update({images:d.images,basket:d.basket});
-  // En mode membre : mémoriser cet appareil
   if(!isAdmin) setLocal({sid:d.sid,name,imgId:pendingImg});
   closeName();
 };
@@ -474,6 +472,8 @@ $('pwd-cancel').onclick=()=>{modalOpen=false;hide($('ov-pwd'));};
 $('pwd-ok').onclick=()=>{
   if($('pwd-input').value===ADMIN_PASSWORD){
     isAdmin=true;
+    // ✅ FIX : sauvegarder le statut admin pour survivre aux snapshots
+    sessionStorage.setItem('douma_admin','1');
     modalOpen=false;hide($('ov-pwd'));
     hide($('admin-login-btn'));
     show($('admin-logout'));
@@ -483,9 +483,13 @@ $('pwd-ok').onclick=()=>{
   }
 };
 $('pwd-input').onkeydown=e=>{if(e.key==='Enter')$('pwd-ok').click();};
-$('admin-logout').onclick=()=>{isAdmin=false;render(session);};
+$('admin-logout').onclick=()=>{
+  isAdmin=false;
+  // ✅ FIX : effacer la session admin au logout
+  sessionStorage.removeItem('douma_admin');
+  render(session);
+};
 
-// Bouton "Lancer un tirage" — visible pour tous
 $('launch-toggle-btn').onclick=()=>$('launch-form').classList.toggle('hidden');
 
 $('n-ok').onclick=async()=>{
@@ -520,7 +524,6 @@ function buildHistCard(docId, d, compact){
   left.style.cssText='display:flex;flex-direction:column;gap:2px;';
   left.innerHTML='<span class="he-date">'+fmtDate(d.savedAt)+'</span><span class="he-badge" style="width:fit-content;">'+d.totalSlots+' membres</span>';
   h.appendChild(left);
-  // bouton supprimer (admin seulement)
   if(isAdmin){
     const del=document.createElement('button');del.className='btn-del';del.textContent='🗑️';
     del.title='Supprimer ce tirage';
@@ -559,7 +562,6 @@ $('del-all-ok').onclick=async()=>{
   }catch(e){modalOpen=false;hide($('ov-del-all'));}
 };
 
-// Modal historique complet
 $('hist-btn').onclick=async()=>{
   modalOpen=true;$('hm-body').innerHTML='<div class="hempty">Chargement…</div>';show($('ov-hist'));
   try{
@@ -575,7 +577,6 @@ $('hist-btn').onclick=async()=>{
 };
 $('hm-close').onclick=()=>{modalOpen=false;hide($('ov-hist'));};
 
-// Copier résultat
 $('copy-btn').onclick=async()=>{
   const txt='Tirage DOUMA — '+fmtDate(Date.now())+'\n'+(session.results||[]).map(r=>r.rank+'. '+r.name).join('\n');
   try{await navigator.clipboard.writeText(txt);$('copy-fb').textContent='Copié ✓';}
