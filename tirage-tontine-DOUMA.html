@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tirage Tontine">
+<meta name="theme-color" content="#1B1430">
+<title>Tirage DOUMA</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1B1430;--bg2:#241936;--bg3:#2c2049;--gold:#E3A857;--terra:#C9603C;--paper:#F3E9D2;--light:#F4EFE6;--muted:#B5A9CF;--danger:#E0654F;--ok:#7CB58A;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{min-height:100vh;background:radial-gradient(circle at 20% 0%,var(--bg3),transparent 55%),radial-gradient(circle at 90% 100%,var(--bg3),transparent 50%),var(--bg);color:var(--light);font-family:'Work Sans',sans-serif;display:flex;justify-content:center;padding:24px 14px 60px;}
+.app{width:100%;max-width:520px;}
+header{margin-bottom:18px;text-align:center;}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:6px;}
+h1{font-family:'Fraunces',serif;font-weight:600;font-size:27px;line-height:1.1;margin:0 0 6px;}
+.sub{color:var(--muted);font-size:13.5px;line-height:1.5;margin:0;}
+.card{background:var(--bg2);border:1px solid rgba(227,168,87,.18);border-radius:18px;padding:20px;margin-bottom:14px;}
+label{font-size:13px;color:var(--muted);font-weight:500;display:block;margin-bottom:8px;}
+input{width:100%;background:var(--bg);border:1px solid rgba(255,255,255,.12);color:var(--light);border-radius:10px;padding:12px 14px;font-size:15px;font-family:inherit;}
+input:focus{outline:2px solid var(--gold);}
+button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:pointer;border-radius:10px;font-size:15px;}
+.btn-p{width:100%;background:var(--terra);color:var(--light);padding:15px;}
+.btn-g{width:100%;background:var(--gold);color:#251A0A;padding:15px;}
+.btn-g:active,.btn-p:active{transform:scale(.985);}
+.btn-ghost{width:100%;background:transparent;border:1px solid rgba(244,239,230,.25);color:var(--light);padding:13px;}
+.btn-end{background:rgba(224,101,79,.14);border:1px solid rgba(224,101,79,.45);color:#F2B3A4;padding:9px 14px;font-size:13px;border-radius:999px;}
+.btn-hist{background:rgba(227,168,87,.12);border:1px solid rgba(227,168,87,.35);color:var(--gold);padding:9px 14px;font-size:13px;border-radius:999px;}
+.hidden{display:none!important;}
+.err{color:var(--danger);font-size:13px;margin-top:8px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.topbar-r{display:flex;align-items:center;gap:8px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(124,181,138,.5);}70%{box-shadow:0 0 0 6px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+.prog{font-size:13px;color:var(--muted);text-align:center;margin-bottom:14px;}
+.prog b{color:var(--gold);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:10px;margin-bottom:18px;}
+.icard{position:relative;background:var(--paper);border-radius:13px;padding:12px 4px 9px;text-align:center;border:2px solid transparent;transition:transform .15s,opacity .25s,filter .25s;cursor:pointer;}
+.icard .em{font-size:30px;line-height:1;display:block;margin-bottom:5px;}
+.icard .lb{font-size:10.5px;color:#5b4c36;font-weight:600;}
+.icard:not(.taken):active{transform:scale(.93);}
+.icard.taken{filter:grayscale(1) opacity(.4);pointer-events:none;}
+.icard.rsv{filter:grayscale(.6) opacity(.55);pointer-events:none;border-color:var(--gold);}
+.chk{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ok);color:#0c1f10;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg2);}
+.pan-title{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:4px 0 10px;}
+.pan-box{min-height:64px;background:var(--bg);border:1px dashed rgba(227,168,87,.3);border-radius:14px;padding:12px;margin-bottom:14px;}
+.pan-empty{color:var(--muted);font-size:13px;text-align:center;padding:14px 0;}
+.chip{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:10px;margin-bottom:7px;animation:si .3s ease;}
+.chip:last-child{margin-bottom:0;}
+@keyframes si{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.banner{background:rgba(124,181,138,.12);border:1px solid rgba(124,181,138,.35);border-radius:12px;padding:11px 14px;font-size:13.5px;margin-bottom:14px;}
+.overlay{position:fixed;inset:0;background:rgba(10,7,20,.8);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+.modal{background:var(--bg2);border:1px solid rgba(227,168,87,.3);border-radius:22px 22px 0 0;padding:24px 20px 32px;width:100%;max-width:520px;text-align:center;}
+.drag{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 18px;}
+.big-em{font-size:48px;margin-bottom:6px;}
+.modal h3{font-family:'Fraunces',serif;font-size:19px;margin:0 0 14px;font-weight:600;}
+.mactions{display:flex;gap:10px;margin-top:14px;}
+.mactions button{flex:1;padding:13px;font-size:14px;}
+.frow{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:12px;margin-bottom:9px;background:linear-gradient(90deg,rgba(227,168,87,.10),transparent);border:1px solid rgba(227,168,87,.22);opacity:0;animation:ri .4s ease forwards;}
+@keyframes ri{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.frank{font-family:'Fraunces',serif;font-weight:900;font-size:19px;color:var(--gold);width:30px;text-align:center;flex-shrink:0;}
+.fem{font-size:22px;width:28px;text-align:center;flex-shrink:0;}
+.fname{font-size:15.5px;font-weight:600;flex:1;}
+.tip{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px dashed rgba(255,255,255,.12);margin-top:18px;padding-top:14px;}
+.hs{margin-top:6px;}
+.hs-title{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+.hs-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+.he{background:var(--bg);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px;margin-bottom:10px;}
+.he-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.he-date{font-size:12px;color:var(--muted);}
+.he-badge{font-size:11px;background:rgba(227,168,87,.12);color:var(--gold);border-radius:999px;padding:3px 10px;font-weight:600;}
+.hr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.hr:last-child{border-bottom:none;padding-bottom:0;}
+.hr-rk{font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--gold);width:22px;flex-shrink:0;}
+.hr-em{font-size:16px;width:22px;text-align:center;flex-shrink:0;}
+.hr-nm{font-size:14px;font-weight:500;}
+.hempty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px 0;}
+.hm-body{max-height:60vh;overflow-y:auto;text-align:left;margin-top:14px;}
+.loading-box{text-align:center;padding:40px 20px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="eyebrow">Tontine DOUMA</div>
+    <h1>Tirage des rangs</h1>
+    <p class="sub">Chaque membre choisit son image — le panier se remplit en direct.</p>
+  </header>
+
+  <main id="s-load">
+    <div class="card loading-box">
+      <div style="font-size:40px;margin-bottom:12px;">🧺</div>
+      <p style="color:var(--muted);font-size:14px;margin:0;">Connexion à Firebase…</p>
+    </div>
+  </main>
+
+  <main id="s-err" class="hidden">
+    <div class="card">
+      <p style="color:var(--danger);font-size:14px;line-height:1.6;" id="err-msg">Erreur de connexion.</p>
+    </div>
+  </main>
+
+  <main id="s-start" class="hidden">
+    <div class="card">
+      <button class="btn-p" id="launch-btn">Lancer un tirage</button>
+      <div id="n-form" class="hidden" style="margin-top:14px;">
+        <label>Combien de membres participent ?</label>
+        <input type="number" id="n-input" min="2" max="30" placeholder="Ex : 8">
+        <p class="err hidden" id="n-err">Entrez un nombre entre 2 et 30.</p>
+        <button class="btn-g" id="n-ok" style="margin-top:8px;">Afficher les images et démarrer</button>
+      </div>
+    </div>
+    <div class="hs">
+      <div class="hs-title">Historique des tirages</div>
+      <div id="hs-list"><div class="hempty">Aucun tirage enregistré.</div></div>
+    </div>
+  </main>
+
+  <main id="s-pick" class="hidden">
+    <div class="topbar">
+      <button class="btn-end" id="end-top">Mettre fin au tirage</button>
+      <div class="topbar-r">
+        <button class="btn-hist" id="hist-btn">📋 Historique</button>
+        <span style="font-size:12px;color:var(--muted);"><span class="dot"></span>en direct</span>
+      </div>
+    </div>
+    <p class="prog"><b id="p-count">0</b>/<span id="p-total">0</span> membres ont rejoint le panier</p>
+    <div id="my-banner" class="banner hidden"></div>
+    <div class="grid" id="img-grid"></div>
+    <div class="pan-title">🧺 Panier</div>
+    <div class="pan-box" id="pan-box"></div>
+    <button class="btn-g hidden" id="mix-btn">Mélanger le panier 🔀</button>
+  </main>
+
+  <main id="s-done" class="hidden">
+    <div class="card">
+      <div class="eyebrow">Résultat final</div>
+      <h1 style="font-size:22px;margin-bottom:14px;">Ordre de passage</h1>
+      <div id="final-list"></div>
+      <button class="btn-ghost" id="copy-btn" style="margin-top:8px;">Copier le résultat</button>
+      <p style="color:var(--gold);font-size:13px;margin-top:6px;min-height:16px;" id="copy-fb"></p>
+    </div>
+    <button class="btn-end" id="end-bottom" style="width:100%;">Mettre fin au tirage</button>
+    <p class="tip">Ce résultat est conservé dans l'historique.</p>
+  </main>
+
+  <div class="overlay hidden" id="ov-end">
+    <div class="modal">
+      <div class="drag"></div>
+      <h3>Mettre fin au tirage ?</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin:-4px 0 6px;">Le résultat sera sauvegardé dans l'historique.</p>
+      <div class="mactions">
+        <button class="btn-ghost" id="end-cancel">Annuler</button>
+        <button style="flex:1;padding:13px;font-size:14px;background:var(--danger);color:#fff;border-radius:10px;" id="end-ok">Mettre fin</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="ov-name">
+    <div class="modal">
+      <div class="drag"></div>
+      <div class="big-em" id="m-em">🦁</div>
+      <h3>Quel est votre nom ?</h3>
+      <input type="text" id="m-name" maxlength="40" placeholder="Votre nom">
+      <p class="err hidden" id="m-err">Entrez votre nom.</p>
+      <div class="mactions">
+        <button class="btn-ghost" id="m-cancel">Annuler</button>
+        <button class="btn-g" id="m-ok">Rejoindre le panier</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="ov-hist">
+    <div class="modal">
+      <div class="drag"></div>
+      <h3>📋 Historique des tirages</h3>
+      <div class="hm-body" id="hm-body"></div>
+      <button class="btn-ghost" id="hm-close" style="margin-top:16px;">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase compat SDK v10.14.1 (version stable confirmée) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+// ================================================================
+// CONFIGURATION FIREBASE — PROJET DOUMA
+// ================================================================
+const firebaseConfig = {
+  apiKey:            "AIzaSyAgHWovBTLIl4ETnsjJqrP7_vCraNbYAEI",
+  authDomain:        "douma-abcf4.firebaseapp.com",
+  projectId:         "douma-abcf4",
+  storageBucket:     "douma-abcf4.firebasestorage.app",
+  messagingSenderId: "785490988681",
+  appId:             "1:785490988681:web:a196503c8b428421360058"
+};
+// ================================================================
+
+const ANIMALS = [
+  ['🦁','Lion'],['🐘','Éléphant'],['🐅','Tigre'],['🦓','Zèbre'],['🦒','Girafe'],
+  ['🐆','Léopard'],['🦌','Cerf'],['🐂','Taureau'],['🐊','Crocodile'],['🦅','Aigle'],
+  ['🦜','Perroquet'],['🐍','Serpent'],['🐢','Tortue'],['🦏','Rhinocéros'],['🐃','Buffle'],
+  ['🐐','Chèvre'],['🐒','Singe'],['🦘','Kangourou'],['🦔','Hérisson'],['🦚','Paon'],
+  ['🦛','Hippopotame'],['🐎','Cheval'],['🐏','Bélier'],['🦬','Bison'],['🦙','Lama'],
+  ['🦥','Paresseux'],['🦦','Loutre'],['🐇','Lapin'],['🦝','Raton laveur'],['🐈','Chat']
+];
+
+let db, session={status:'idle'}, myEntry=null, modalOpen=false, pendingImg=null;
+
+function shuffle(a){
+  const b=a.slice();
+  for(let i=b.length-1;i>0;i--){
+    const r=new Uint32Array(1); crypto.getRandomValues(r);
+    const j=r[0]%(i+1); [b[i],b[j]]=[b[j],b[i]];
+  }
+  return b;
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function fmtDate(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' '+
+         d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+function getLocal(){try{const v=localStorage.getItem('douma-entry');return v?JSON.parse(v):null;}catch(e){return null;}}
+function setLocal(v){myEntry=v;try{localStorage.setItem('douma-entry',JSON.stringify(v));}catch(e){}}
+
+// DOM
+const sLoad=$('s-load'),sErr=$('s-err'),sStart=$('s-start'),sPick=$('s-pick'),sDone=$('s-done');
+const errMsg=$('err-msg'),launchBtn=$('launch-btn'),nForm=$('n-form'),nInput=$('n-input'),nErr=$('n-err'),nOk=$('n-ok');
+const endTop=$('end-top'),endBottom=$('end-bottom'),histBtn=$('hist-btn');
+const pCount=$('p-count'),pTotal=$('p-total'),myBanner=$('my-banner'),imgGrid=$('img-grid'),panBox=$('pan-box'),mixBtn=$('mix-btn');
+const finalList=$('final-list'),copyBtn=$('copy-btn'),copyFb=$('copy-fb');
+const ovEnd=$('ov-end'),endCancel=$('end-cancel'),endOk=$('end-ok');
+const ovName=$('ov-name'),mEm=$('m-em'),mName=$('m-name'),mErr=$('m-err'),mCancel=$('m-cancel'),mOk=$('m-ok');
+const ovHist=$('ov-hist'),hmBody=$('hm-body'),hmClose=$('hm-close');
+const hsList=$('hs-list');
+function $(id){return document.getElementById(id);}
+
+function show(el){el.classList.remove('hidden');}
+function hide(el){el.classList.add('hidden');}
+function screens(...els){[sLoad,sErr,sStart,sPick,sDone].forEach(s=>hide(s));els.forEach(e=>show(e));}
+
+// Render
+function render(s){
+  session=s;
+  if(!s||s.status==='idle'){screens(sStart);loadHist();return;}
+  if(s.status==='picking'){screens(sPick);renderPick(s);return;}
+  if(s.status==='done'){screens(sDone);renderDone(s);return;}
+}
+
+function renderPick(s){
+  pCount.textContent=(s.basket||[]).length;
+  pTotal.textContent=s.totalSlots;
+  const joined=myEntry&&myEntry.sid===s.sid;
+  if(joined){
+    const img=(s.images||[]).find(i=>i.id===myEntry.imgId);
+    show(myBanner);
+    myBanner.innerHTML='✅ Vous êtes dans le panier : <b>'+(img?img.em:'')+' '+esc(myEntry.name)+'</b>';
+  }else hide(myBanner);
+
+  imgGrid.innerHTML='';
+  (s.images||[]).forEach(img=>{
+    const c=document.createElement('div');
+    c.className='icard'+(img.by==='__r'?' rsv':img.by?' taken':'');
+    c.innerHTML=(img.by&&img.by!=='__r'?'<div class="chk">✓</div>':'')+
+      '<span class="em">'+img.em+'</span><span class="lb">'+img.lb+'</span>';
+    if(!img.by&&!joined) c.onclick=()=>onImg(img.id);
+    imgGrid.appendChild(c);
+  });
+
+  panBox.innerHTML='';
+  const b=s.basket||[];
+  if(!b.length){panBox.innerHTML='<div class="pan-empty">Le panier est encore vide…</div>';}
+  else b.forEach(e=>{
+    const img=(s.images||[]).find(i=>i.id===e.imgId);
+    const r=document.createElement('div');
+    r.className='chip';
+    r.innerHTML='<span style="font-size:18px">'+(img?img.em:'🏷️')+'</span><span style="font-size:14.5px;font-weight:500"></span>';
+    r.querySelector('span:last-child').textContent=e.name;
+    panBox.appendChild(r);
+  });
+  mixBtn.classList.toggle('hidden',!(b.length>=s.totalSlots&&s.totalSlots>0));
+}
+
+function renderDone(s){
+  finalList.innerHTML='';
+  (s.results||[]).forEach((r,i)=>{
+    const img=(s.images||[]).find(im=>im.id===r.imgId);
+    const row=document.createElement('div');
+    row.className='frow';row.style.animationDelay=(i*.08)+'s';
+    row.innerHTML='<div class="frank">'+r.rank+'</div><div class="fem">'+(img?img.em:'🏷️')+'</div><div class="fname"></div>';
+    row.querySelector('.fname').textContent=r.name;
+    finalList.appendChild(row);
+  });
+}
+
+// Firestore
+function sesRef(){return db.collection('tontine_sessions').doc('current');}
+function histRef(){return db.collection('tontine_history');}
+
+async function startDraw(n){
+  const chosen=shuffle(ANIMALS).slice(0,n);
+  const images=shuffle(chosen).map(a=>({
+    id:Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4),
+    em:a[0],lb:a[1],by:null
+  }));
+  await sesRef().set({status:'picking',sid:Date.now()+'-'+Math.random().toString(36).slice(2,6),totalSlots:n,images,basket:[]});
+}
+
+async function onImg(imgId){
+  if(modalOpen) return;
+  const snap=await sesRef().get();
+  if(!snap.exists) return;
+  const d=snap.data();
+  const img=(d.images||[]).find(i=>i.id===imgId);
+  if(!img||img.by) return;
+  img.by='__r';
+  await sesRef().update({images:d.images});
+  openName(imgId,img.em);
+}
+
+function openName(imgId,em){
+  modalOpen=true;pendingImg=imgId;
+  mEm.textContent=em;mName.value='';hide(mErr);
+  show(ovName);setTimeout(()=>mName.focus(),50);
+}
+function closeName(){modalOpen=false;pendingImg=null;hide(ovName);}
+
+mOk.onclick=async()=>{
+  const name=mName.value.trim();
+  if(!name){show(mErr);return;}
+  const snap=await sesRef().get();
+  if(!snap.exists){closeName();return;}
+  const d=snap.data();
+  const img=(d.images||[]).find(i=>i.id===pendingImg);
+  if(!img){closeName();return;}
+  img.by=name;
+  d.basket=d.basket||[];
+  d.basket.push({imgId:pendingImg,name,t:Date.now()});
+  await sesRef().update({images:d.images,basket:d.basket});
+  setLocal({sid:d.sid,name,imgId:pendingImg});
+  closeName();
+};
+mCancel.onclick=async()=>{
+  const snap=await sesRef().get();
+  if(snap.exists){
+    const d=snap.data();
+    const img=(d.images||[]).find(i=>i.id===pendingImg);
+    if(img&&img.by==='__r'){img.by=null;await sesRef().update({images:d.images});}
+  }
+  closeName();
+};
+
+mixBtn.onclick=async()=>{
+  const snap=await sesRef().get();
+  if(!snap.exists) return;
+  const d=snap.data();
+  if(!d.basket||d.basket.length<d.totalSlots) return;
+  const sh=shuffle(d.basket);
+  d.results=sh.map((e,i)=>({rank:i+1,name:e.name,imgId:e.imgId}));
+  d.status='done';
+  await sesRef().update({status:'done',results:d.results});
+};
+
+async function doEnd(){
+  if(session&&session.status==='done'&&session.results&&session.results.length){
+    await histRef().add({savedAt:Date.now(),results:session.results,images:session.images,totalSlots:session.totalSlots});
+  }
+  await sesRef().set({status:'idle',sid:null});
+  myEntry=null;
+}
+
+function openEnd(){modalOpen=true;show(ovEnd);}
+function closeEnd(){modalOpen=false;hide(ovEnd);}
+endCancel.onclick=closeEnd;
+endOk.onclick=async()=>{await doEnd();closeEnd();};
+endTop.onclick=openEnd;endBottom.onclick=openEnd;
+
+// Historique
+async function loadHist(){
+  hsList.innerHTML='<div class="hempty">Chargement…</div>';
+  try{
+    const snap=await histRef().orderBy('savedAt','desc').limit(3).get();
+    hsList.innerHTML='';
+    if(snap.empty){hsList.innerHTML='<div class="hempty">Aucun tirage enregistré.</div>';return;}
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const card=document.createElement('div');card.className='he';
+      const h=document.createElement('div');h.className='he-h';
+      h.innerHTML='<span class="he-date">'+fmtDate(d.savedAt)+'</span><span class="he-badge">'+d.totalSlots+' membres</span>';
+      card.appendChild(h);
+      (d.results||[]).forEach(r=>{
+        const img=(d.images||[]).find(i=>i.id===r.imgId);
+        const row=document.createElement('div');row.className='hr';
+        row.innerHTML='<span class="hr-rk">'+r.rank+'</span><span class="hr-em">'+(img?img.em:'🏷️')+'</span><span class="hr-nm"></span>';
+        row.querySelector('.hr-nm').textContent=r.name;
+        card.appendChild(row);
+      });
+      hsList.appendChild(card);
+    });
+  }catch(e){hsList.innerHTML='<div class="hempty">Impossible de charger l\'historique.</div>';}
+}
+
+histBtn.onclick=async()=>{
+  modalOpen=true;hmBody.innerHTML='<div class="hempty">Chargement…</div>';show(ovHist);
+  try{
+    const snap=await histRef().orderBy('savedAt','desc').limit(20).get();
+    hmBody.innerHTML='';
+    if(snap.empty){hmBody.innerHTML='<div class="hempty">Aucun tirage enregistré.</div>';return;}
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const card=document.createElement('div');card.className='he';card.style.marginBottom='12px';
+      const h=document.createElement('div');h.className='he-h';
+      h.innerHTML='<span class="he-date">'+fmtDate(d.savedAt)+'</span><span class="he-badge">'+d.totalSlots+' membres</span>';
+      card.appendChild(h);
+      (d.results||[]).forEach(r=>{
+        const img=(d.images||[]).find(i=>i.id===r.imgId);
+        const row=document.createElement('div');row.className='hr';
+        row.innerHTML='<span class="hr-rk">'+r.rank+'</span><span class="hr-em">'+(img?img.em:'🏷️')+'</span><span class="hr-nm"></span>';
+        row.querySelector('.hr-nm').textContent=r.name;
+        card.appendChild(row);
+      });
+      hmBody.appendChild(card);
+    });
+  }catch(e){hmBody.innerHTML='<div class="hempty">Impossible de charger l\'historique.</div>';}
+};
+hmClose.onclick=()=>{modalOpen=false;hide(ovHist);};
+
+launchBtn.onclick=()=>nForm.classList.toggle('hidden');
+nOk.onclick=async()=>{
+  const n=parseInt(nInput.value,10);
+  if(!n||n<2||n>30){show(nErr);return;}
+  hide(nErr);await startDraw(n);nInput.value='';hide(nForm);
+};
+
+copyBtn.onclick=async()=>{
+  const txt='Tirage DOUMA\n'+(session.results||[]).map(r=>r.rank+'. '+r.name).join('\n');
+  try{await navigator.clipboard.writeText(txt);copyFb.textContent='Copié ✓';}
+  catch(e){try{const t=document.createElement('textarea');t.value=txt;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);copyFb.textContent='Copié ✓';}catch(e2){copyFb.textContent='Copie indisponible.';}}
+};
+
+// Init
+try{
+  firebase.initializeApp(firebaseConfig);
+  db=firebase.firestore();
+  myEntry=getLocal();
+  sesRef().onSnapshot(snap=>{
+    if(modalOpen) return;
+    const s=snap.exists?snap.data():{status:'idle'};
+    render(s);
+  },err=>{
+    screens(sErr);
+    errMsg.textContent='Erreur Firebase : '+err.message+' — Vérifiez les règles Firestore.';
+  });
+}catch(e){
+  screens(sErr);
+  errMsg.textContent='Erreur d\'initialisation : '+e.message;
+}
+</script>
+</body>
+</html>
