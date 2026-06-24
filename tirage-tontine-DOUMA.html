@@ -622,12 +622,31 @@ $('copy-btn').onclick=async()=>{
 try{
   firebase.initializeApp(firebaseConfig);
   db=firebase.firestore();
+  // Force le long-polling : passe beaucoup mieux derrière les antivirus,
+  // proxys d'entreprise/école et certains réseaux mobiles/FAI restrictifs
+  // qui bloquent ou cassent les connexions "streaming" (WebChannel) de Firestore.
+  db.settings({experimentalAutoDetectLongPolling:true, useFetchStreams:false});
+
   myEntry=getLocal();
+
+  // Filet de sécurité : si la connexion ne répond ni en succès ni en erreur
+  // après 8 secondes, on affiche un message clair au lieu de rester bloqué
+  // indéfiniment sur "Connexion…".
+  let connected=false;
+  const connTimeout=setTimeout(()=>{
+    if(!connected){
+      screens($('s-err'));
+      $('err-msg').textContent='Connexion trop lente ou bloquée. Vérifiez votre connexion internet, désactivez temporairement votre antivirus/pare-feu ou essayez un autre réseau (ex. partage de connexion mobile), puis rechargez la page.';
+    }
+  },8000);
+
   sesRef().onSnapshot(snap=>{
+    connected=true;clearTimeout(connTimeout);
     if(modalOpen) return;
     const s=snap.exists?snap.data():{status:'idle'};
     render(s);
   },err=>{
+    connected=true;clearTimeout(connTimeout);
     screens($('s-err'));
     $('err-msg').textContent='Erreur Firebase : '+err.message+' — Vérifiez les règles Firestore.';
   });
