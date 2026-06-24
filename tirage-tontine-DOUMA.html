@@ -629,6 +629,24 @@ try{
 
   myEntry=getLocal();
 
+  // -------------------------------------------------------------
+  // RÉINITIALISATION D'URGENCE
+  // Ouvrez : ...tirage-tontine-DOUMA.html?reset=DOUMA2026
+  // (remplacez DOUMA2026 par votre mot de passe admin si vous l'avez changé)
+  // Cela remet la session à "idle" même si les boutons de l'interface
+  // sont bloqués, et la page se recharge proprement ensuite.
+  // -------------------------------------------------------------
+  const urlParams = new URLSearchParams(window.location.search);
+  const resetKey = urlParams.get('reset');
+  if(resetKey === ADMIN_PASSWORD){
+    sesRef().set({status:'idle', sid:null}).then(()=>{
+      alert('Tirage réinitialisé avec succès. La page va se recharger sans le paramètre de réinitialisation.');
+      window.location.href = window.location.pathname;
+    }).catch(e=>{
+      alert('Échec de la réinitialisation : '+e.message);
+    });
+  }
+
   // Filet de sécurité : si la connexion ne répond ni en succès ni en erreur
   // après 8 secondes, on affiche un message clair au lieu de rester bloqué
   // indéfiniment sur "Connexion…".
