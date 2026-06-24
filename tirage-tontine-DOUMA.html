@@ -151,7 +151,7 @@ button{font-family:'Work Sans',system-ui,-apple-system,sans-serif;font-weight:60
         <button class="btn-hist" id="hist-btn">📋 Historique</button>
         <span style="font-size:12px;color:var(--muted);"><span class="dot"></span>en direct</span>
       </div>
-      <button class="btn-end hidden" id="end-top">⏹️ Mettre fin</button>
+      <button class="btn-end" id="end-top">⏹️ Mettre fin</button>
     </div>
     <div id="admin-pick-badge" class="admin-badge hidden" style="margin-bottom:10px;">🔐 Mode administrateur — ajoutez tous les membres</div>
     <p class="prog"><b id="p-count">0</b>/<span id="p-total">0</span> membres ont rejoint le panier</p>
@@ -171,7 +171,7 @@ button{font-family:'Work Sans',system-ui,-apple-system,sans-serif;font-weight:60
       <button class="btn-ghost" id="copy-btn" style="margin-top:8px;">Copier le résultat</button>
       <p style="color:var(--gold);font-size:13px;margin-top:6px;min-height:16px;" id="copy-fb"></p>
     </div>
-    <button class="btn-end hidden" id="end-bottom" style="width:100%;padding:16px;font-size:15px;border-radius:14px;margin-top:12px;display:block;text-align:center;">⏹️ Mettre fin au tirage</button>
+    <button class="btn-end" id="end-bottom" style="width:100%;padding:16px;font-size:15px;border-radius:14px;margin-top:12px;display:block;text-align:center;">⏹️ Mettre fin au tirage</button>
     <p class="tip">Ce résultat est conservé dans l'historique.</p>
   </main>
 
@@ -333,11 +333,11 @@ function renderPick(s){
   $('p-total').textContent=s.totalSlots;
 
   // badges et boutons selon rôle
+  show($('end-top'));
   if(isAdmin){
-    show($('admin-pick-badge')); show($('end-top'));
-    hide($('my-banner'));
+    show($('admin-pick-badge')); hide($('my-banner'));
   } else {
-    hide($('admin-pick-badge')); hide($('end-top'));
+    hide($('admin-pick-badge'));
     // badge si membre déjà dans le panier
     const joined = myEntry && myEntry.sid===s.sid;
     if(joined){
