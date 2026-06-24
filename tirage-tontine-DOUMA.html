@@ -144,12 +144,12 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
 
   <!-- TIRAGE EN COURS (mode membre) -->
   <main id="s-pick" class="hidden">
-    <div class="topbar">
-      <button class="btn-end hidden" id="end-top">⏹️ Mettre fin au tirage</button>
+    <div class="topbar" style="justify-content:space-between;">
       <div class="topbar-r">
         <button class="btn-hist" id="hist-btn">📋 Historique</button>
         <span style="font-size:12px;color:var(--muted);"><span class="dot"></span>en direct</span>
       </div>
+      <button class="btn-end hidden" id="end-top">⏹️ Mettre fin</button>
     </div>
     <div id="admin-pick-badge" class="admin-badge hidden" style="margin-bottom:10px;">🔐 Mode administrateur — ajoutez tous les membres</div>
     <p class="prog"><b id="p-count">0</b>/<span id="p-total">0</span> membres ont rejoint le panier</p>
@@ -169,7 +169,7 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
       <button class="btn-ghost" id="copy-btn" style="margin-top:8px;">Copier le résultat</button>
       <p style="color:var(--gold);font-size:13px;margin-top:6px;min-height:16px;" id="copy-fb"></p>
     </div>
-    <button class="btn-end hidden" id="end-bottom" style="width:100%;padding:14px;font-size:14.5px;border-radius:14px;margin-top:4px;letter-spacing:.03em;">⏹️ Mettre fin au tirage</button>
+    <button class="btn-end hidden" id="end-bottom" style="width:100%;padding:16px;font-size:15px;border-radius:14px;margin-top:12px;display:block;text-align:center;">⏹️ Mettre fin au tirage</button>
     <p class="tip">Ce résultat est conservé dans l'historique.</p>
   </main>
 
@@ -363,10 +363,10 @@ function renderPick(s){
   $('pan-box').innerHTML='';
   const b=s.basket||[];
   if(!b.length){$('pan-box').innerHTML='<div class="pan-empty">Le panier est encore vide…</div>';}
-  else b.forEach(e=>{
+  else b.forEach((e,idx)=>{
     const img=(s.images||[]).find(i=>i.id===e.imgId);
     const r=document.createElement('div');r.className='chip';
-    r.innerHTML='<span style="font-size:18px">'+(img?img.em:'🏷️')+'</span><span style="font-size:14.5px;font-weight:500"></span>';
+    r.innerHTML='<span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--gold);width:22px;flex-shrink:0;text-align:center;">'+(idx+1)+'</span><span style="font-size:18px">'+(img?img.em:'🏷️')+'</span><span style="font-size:14.5px;font-weight:500"></span>';
     r.querySelector('span:last-child').textContent=e.name;
     $('pan-box').appendChild(r);
   });
@@ -386,11 +386,13 @@ function renderDone(s){
     $('final-list').appendChild(row);
   });
   // Bouton fin : admin seulement, toujours visible en bas du résultat
-  isAdmin ? show($('end-bottom')) : hide($('end-bottom'));
-  // S'assurer que end-bottom est bien en bas et visible pour admin
+  const endBtn=$('end-bottom');
   if(isAdmin){
-    $('end-bottom').style.display='block';
-    $('end-bottom').scrollIntoView&&false; // ne pas forcer scroll auto
+    endBtn.style.display='block';
+    endBtn.classList.remove('hidden');
+  } else {
+    endBtn.style.display='none';
+    endBtn.classList.add('hidden');
   }
 }
 
