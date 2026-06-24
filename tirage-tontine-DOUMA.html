@@ -122,19 +122,17 @@ button{font-family:'Work Sans',sans-serif;font-weight:600;border:none;cursor:poi
     <div class="card">
       <!-- Badge admin si connecté -->
       <div id="admin-badge" class="admin-badge hidden">🔐 Mode administrateur</div>
-      <!-- Bouton membre -->
-      <button class="btn-p" id="member-info-btn">👤 Rejoindre le tirage en cours</button>
-      <p id="no-draw-msg" style="color:var(--muted);font-size:13px;text-align:center;margin:10px 0 0;" class="hidden">Aucun tirage en cours — attendez que l'administrateur en lance un.</p>
-      <!-- Bouton admin -->
-      <button class="btn-admin" id="admin-login-btn">🔐 Accès administrateur</button>
-      <!-- Formulaire lancer tirage (admin seulement) -->
+      <!-- Formulaire lancer tirage — visible pour tous -->
+      <button class="btn-p" id="launch-toggle-btn">🎯 Lancer un tirage</button>
       <div id="launch-form" class="hidden" style="margin-top:14px;border-top:1px dashed rgba(255,255,255,.1);padding-top:14px;">
         <label>Nombre de membres participants</label>
         <input type="number" id="n-input" min="2" max="30" placeholder="Ex : 8">
         <p class="err hidden" id="n-err">Entrez un nombre entre 2 et 30.</p>
-        <button class="btn-g" id="n-ok" style="margin-top:8px;">Lancer le tirage</button>
-        <button class="btn-ghost" id="admin-logout" style="margin-top:8px;font-size:13px;padding:10px;">Se déconnecter</button>
+        <button class="btn-g" id="n-ok" style="margin-top:8px;">Confirmer et afficher les images</button>
       </div>
+      <!-- Bouton admin -->
+      <button class="btn-admin" id="admin-login-btn">🔐 Accès administrateur</button>
+      <button class="btn-ghost hidden" id="admin-logout" style="margin-top:8px;font-size:13px;padding:10px;">Se déconnecter (admin)</button>
     </div>
     <!-- Historique -->
     <div class="hs">
@@ -311,12 +309,11 @@ function render(s){
 }
 
 function renderStart(){
-  // badge admin
   isAdmin ? show($('admin-badge')) : hide($('admin-badge'));
-  isAdmin ? show($('launch-form')) : hide($('launch-form'));
+  isAdmin ? show($('admin-logout')) : hide($('admin-logout'));
+  isAdmin ? hide($('admin-login-btn')) : show($('admin-login-btn'));
   isAdmin ? show($('del-all-btn')) : hide($('del-all-btn'));
-  // "Rejoindre" n'a de sens qu'en attente
-  show($('no-draw-msg'));
+  hide($('launch-form')); // replié par défaut
   loadHist();
 }
 
@@ -366,6 +363,7 @@ function renderPick(s){
   });
 
   const full=b.length>=s.totalSlots&&s.totalSlots>0;
+  // Mélanger visible pour tous quand panier plein
   full ? show($('mix-btn')) : hide($('mix-btn'));
 }
 
@@ -477,6 +475,8 @@ $('pwd-ok').onclick=()=>{
   if($('pwd-input').value===ADMIN_PASSWORD){
     isAdmin=true;
     modalOpen=false;hide($('ov-pwd'));
+    hide($('admin-login-btn'));
+    show($('admin-logout'));
     render(session);
   } else {
     show($('pwd-err'));
@@ -485,8 +485,9 @@ $('pwd-ok').onclick=()=>{
 $('pwd-input').onkeydown=e=>{if(e.key==='Enter')$('pwd-ok').click();};
 $('admin-logout').onclick=()=>{isAdmin=false;render(session);};
 
-// Formulaire admin lancer tirage
-$('admin-login-btn').addEventListener('click',()=>{});
+// Bouton "Lancer un tirage" — visible pour tous
+$('launch-toggle-btn').onclick=()=>$('launch-form').classList.toggle('hidden');
+
 $('n-ok').onclick=async()=>{
   const n=parseInt($('n-input').value,10);
   if(!n||n<2||n>30){show($('n-err'));return;}
@@ -556,15 +557,6 @@ $('del-all-ok').onclick=async()=>{
     modalOpen=false;hide($('ov-del-all'));
     $('hs-list').innerHTML='<div class="hempty">Aucun tirage enregistré.</div>';
   }catch(e){modalOpen=false;hide($('ov-del-all'));}
-};
-
-// Bouton rejoindre (membre) — info si pas de tirage
-$('member-info-btn').onclick=()=>{
-  if(session&&session.status==='picking'){
-    // déjà sur l'écran picking normalement — ne devrait pas arriver
-  } else {
-    show($('no-draw-msg'));
-  }
 };
 
 // Modal historique complet
