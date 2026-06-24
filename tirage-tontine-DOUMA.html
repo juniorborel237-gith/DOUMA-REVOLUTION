@@ -256,12 +256,8 @@ function render(s){
 function renderPick(s){
   pCount.textContent=(s.basket||[]).length;
   pTotal.textContent=s.totalSlots;
-  const joined=myEntry&&myEntry.sid===s.sid;
-  if(joined){
-    const img=(s.images||[]).find(i=>i.id===myEntry.imgId);
-    show(myBanner);
-    myBanner.innerHTML='✅ Vous êtes dans le panier : <b>'+(img?img.em:'')+' '+esc(myEntry.name)+'</b>';
-  }else hide(myBanner);
+  const joined=false; // on n'bloque jamais le même appareil — chaque membre peut choisir à la suite
+  hide(myBanner);
 
   imgGrid.innerHTML='';
   (s.images||[]).forEach(img=>{
