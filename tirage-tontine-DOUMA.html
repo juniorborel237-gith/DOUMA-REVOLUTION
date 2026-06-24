@@ -328,53 +328,68 @@ $('launch-toggle-btn').onclick=()=>{
   form.classList.toggle('hidden');
 };
 
+// État précédent — évite de recréer le DOM quand rien n'a changé
+let _lastImagesJson = null;
+let _lastBasketLen = -1;
+let _lastJoined = null;
+
 function renderPick(s){
   $('p-count').textContent=(s.basket||[]).length;
   $('p-total').textContent=s.totalSlots;
-
-  // badges et boutons selon rôle
   show($('end-top'));
+
+  // Badge rôle
   if(isAdmin){
     show($('admin-pick-badge')); hide($('my-banner'));
   } else {
     hide($('admin-pick-badge'));
-    // badge si membre déjà dans le panier
-    const joined = myEntry && myEntry.sid===s.sid;
-    if(joined){
-      const img=(s.images||[]).find(i=>i.id===myEntry.imgId);
-      show($('my-banner'));
-      $('my-banner').innerHTML='✅ Vous êtes dans le panier : <b>'+(img?img.em:'')+' '+esc(myEntry.name)+'</b>';
-    } else {
-      hide($('my-banner'));
+    const joined = !!(myEntry && myEntry.sid===s.sid);
+    if(String(joined) !== String(_lastJoined)){
+      _lastJoined = joined;
+      if(joined){
+        const img=(s.images||[]).find(i=>i.id===myEntry.imgId);
+        show($('my-banner'));
+        $('my-banner').innerHTML='✅ Vous êtes dans le panier : <b>'+(img?img.em:'')+' '+esc(myEntry.name)+'</b>';
+      } else { hide($('my-banner')); }
     }
   }
 
-  // grille
-  const joined = !isAdmin && myEntry && myEntry.sid===s.sid;
-  $('img-grid').innerHTML='';
-  (s.images||[]).forEach(img=>{
-    const c=document.createElement('div');
-    c.className='icard'+(img.by==='__r'?' rsv':img.by?' taken':joined?' locked':'');
-    c.innerHTML=(img.by&&img.by!=='__r'?'<div class="chk">✓</div>':'')+
-      '<span class="em">'+img.em+'</span><span class="lb">'+img.lb+'</span>';
-    if(!img.by&&!joined) c.onclick=()=>onImg(img.id);
-    $('img-grid').appendChild(c);
-  });
+  // Grille — recréer uniquement si les images ont changé (évite le scintillement)
+  const imagesJson = JSON.stringify(s.images);
+  if(imagesJson !== _lastImagesJson){
+    _lastImagesJson = imagesJson;
+    const joined = !isAdmin && !!(myEntry && myEntry.sid===s.sid);
+    $('img-grid').innerHTML='';
+    (s.images||[]).forEach(img=>{
+      const c=document.createElement('div');
+      c.className='icard'+(img.by==='__r'?' rsv':img.by?' taken':joined?' locked':'');
+      c.innerHTML=(img.by&&img.by!=='__r'?'<div class="chk">✓</div>':'')+
+        '<span class="em">'+img.em+'</span><span class="lb">'+img.lb+'</span>';
+      if(!img.by&&!joined) c.onclick=()=>onImg(img.id);
+      $('img-grid').appendChild(c);
+    });
+  }
 
-  // panier
-  $('pan-box').innerHTML='';
+  // Panier — SANS numéros, seulement animal + nom
+  // Les numéros apparaissent uniquement après le mélange (dans renderDone)
   const b=s.basket||[];
-  if(!b.length){$('pan-box').innerHTML='<div class="pan-empty">Le panier est encore vide…</div>';}
-  else b.forEach((e,idx)=>{
-    const img=(s.images||[]).find(i=>i.id===e.imgId);
-    const r=document.createElement('div');r.className='chip';
-    r.innerHTML='<span class="hr-rk">'+(idx+1)+'</span><span class="hr-em">'+(img?img.em:'🏷️')+'</span><span class="hr-nm"></span>';
-    r.querySelector('span:last-child').textContent=e.name;
-    $('pan-box').appendChild(r);
-  });
+  if(b.length===0 && _lastBasketLen!==0){
+    $('pan-box').innerHTML='<div class="pan-empty">Le panier est encore vide…</div>';
+    _lastBasketLen=0;
+  } else if(b.length > _lastBasketLen){
+    if(_lastBasketLen<=0) $('pan-box').innerHTML='';
+    for(let i=Math.max(0,_lastBasketLen);i<b.length;i++){
+      const e=b[i];
+      const img=(s.images||[]).find(im=>im.id===e.imgId);
+      const r=document.createElement('div');r.className='chip';
+      r.innerHTML='<span style="font-size:20px">'+(img?img.em:'🏷️')+'</span><span style="font-size:15px;font-weight:500;margin-left:6px;"></span>';
+      r.querySelector('span:last-child').textContent=e.name;
+      $('pan-box').appendChild(r);
+    }
+    _lastBasketLen=b.length;
+  }
 
   const full=b.length>=s.totalSlots&&s.totalSlots>0;
-  // Mélanger visible pour tous quand panier plein
   full ? show($('mix-btn')) : hide($('mix-btn'));
 }
 
