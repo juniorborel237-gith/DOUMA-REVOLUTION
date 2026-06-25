@@ -124,17 +124,31 @@ button{font-family:'Work Sans',system-ui,-apple-system,sans-serif;font-weight:60
     <div class="card">
       <!-- Badge admin si connecté -->
       <div id="admin-badge" class="admin-badge hidden">🔐 Mode administrateur</div>
-      <!-- Formulaire lancer tirage — visible pour tous -->
-      <button class="btn-p" id="launch-toggle-btn">🎯 Lancer un tirage</button>
-      <div id="launch-form" class="hidden" style="margin-top:14px;border-top:1px dashed rgba(255,255,255,.1);padding-top:14px;">
-        <label>Nombre de membres participants</label>
+
+      <!-- Zone boutons principaux (mutuellement exclusifs) -->
+      <div id="btn-zone">
+        <button class="btn-p" id="launch-toggle-btn" style="margin-bottom:10px;">🎯 Lancer un tirage</button>
+        <button class="btn-admin" id="admin-login-btn">🔐 Accès administrateur</button>
+      </div>
+
+      <!-- Formulaire membre (lancer tirage) -->
+      <div id="launch-form" class="hidden">
+        <label style="margin-top:4px;">Nombre de membres participants</label>
         <input type="number" id="n-input" min="2" max="30" placeholder="Ex : 8">
         <p class="err hidden" id="n-err">Entrez un nombre entre 2 et 30.</p>
-        <button class="btn-g" id="n-ok" style="margin-top:8px;">Confirmer et afficher les images</button>
+        <button class="btn-g" id="n-ok" style="margin-top:10px;">Confirmer et afficher les images</button>
+        <button class="btn-ghost" id="launch-back" style="margin-top:8px;font-size:13px;padding:10px;">← Retour</button>
       </div>
-      <!-- Bouton admin -->
-      <button class="btn-admin" id="admin-login-btn">🔐 Accès administrateur</button>
-      <button class="btn-ghost hidden" id="admin-logout" style="margin-top:8px;font-size:13px;padding:10px;">Se déconnecter (admin)</button>
+
+      <!-- Formulaire admin -->
+      <div id="admin-form" class="hidden">
+        <div class="admin-badge" style="margin-bottom:14px;">🔐 Mode administrateur</div>
+        <label>Nombre de membres participants</label>
+        <input type="number" id="admin-n-input" min="2" max="30" placeholder="Ex : 8">
+        <p class="err hidden" id="admin-n-err">Entrez un nombre entre 2 et 30.</p>
+        <button class="btn-g" id="admin-n-ok" style="margin-top:10px;">Confirmer et afficher les images</button>
+        <button class="btn-ghost" id="admin-logout" style="margin-top:8px;font-size:13px;padding:10px;">← Se déconnecter</button>
+      </div>
     </div>
     <!-- Historique -->
     <div class="hs">
@@ -303,30 +317,70 @@ function screens(...show_list){
 }
 
 // ---------------------------------------------------------------- RENDER
-function render(s){
+function render(s, forceHistReload){
+  const prevStatus = session ? session.status : null;
   session=s;
-  if(!s||s.status==='idle'){screens($('s-start'));renderStart();return;}
-  if(s.status==='picking'){screens($('s-pick'));renderPick(s);return;}
-  if(s.status==='done'){screens($('s-done'));renderDone(s);return;}
+  if(!s||s.status==='idle'){
+    screens($('s-start'));
+    // Recharger historique si on vient de terminer un tirage
+    renderStart(forceHistReload || prevStatus==='done');
+    startPolling('idle');
+    return;
+  }
+  if(s.status==='picking'){screens($('s-pick'));renderPick(s);startPolling('picking');return;}
+  if(s.status==='done'){
+    // Arrêter le polling — le résultat est figé
+    if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+    // Afficher une seule fois (éviter les re-rendus qui font bouger)
+    if(prevStatus!=='done'){screens($('s-done'));renderDone(s);}
+    return;
+  }
 }
 
-function renderStart(){
-  isAdmin ? show($('admin-badge')) : hide($('admin-badge'));
-  isAdmin ? show($('admin-logout')) : hide($('admin-logout'));
-  isAdmin ? hide($('admin-login-btn')) : show($('admin-login-btn'));
-  isAdmin ? show($('del-all-btn')) : hide($('del-all-btn'));
-  // Ne ferme le formulaire que si c'est la 1ère fois (pas d'écrasement si déjà ouvert)
-  if(!$('launch-form').__opened){
-    hide($('launch-form'));
+let histLoaded=false;
+
+function renderStart(forceHistReload){
+  // Zone boutons
+  show($('btn-zone'));
+  hide($('launch-form'));
+  hide($('admin-form'));
+  if(isAdmin){
+    show($('admin-badge'));
+    show($('del-all-btn'));
+  } else {
+    hide($('admin-badge'));
+    hide($('del-all-btn'));
   }
-  loadHist();
+  // Historique : chargé une seule fois, ou si forceReload après mélange
+  if(!histLoaded || forceHistReload){
+    histLoaded=true;
+    loadHist();
+  }
 }
+
+// Bouton "Lancer un tirage" : cache l'autre bouton, affiche le formulaire
 $('launch-toggle-btn').onclick=()=>{
-  const form=$('launch-form');
-  const willShow=form.classList.contains('hidden');
-  form.__opened=willShow;
-  form.classList.toggle('hidden');
+  hide($('btn-zone'));
+  show($('launch-form'));
 };
+// Retour depuis formulaire membre
+document.addEventListener('click', e=>{
+  if(e.target.id==='launch-back'){
+    hide($('launch-form'));
+    show($('btn-zone'));
+  }
+});
+
+// Bouton admin logout (dans formulaire admin)
+document.addEventListener('click', e=>{
+  if(e.target.id==='admin-logout'){
+    isAdmin=false;
+    hide($('admin-form'));
+    show($('btn-zone'));
+    hide($('admin-badge'));
+    hide($('del-all-btn'));
+  }
+});
 
 // État précédent — évite de recréer le DOM quand rien n'a changé
 let _lastImagesJson = null;
@@ -402,15 +456,9 @@ function renderDone(s){
     row.querySelector('.fname').textContent=r.name;
     $('final-list').appendChild(row);
   });
-  // Bouton fin : admin seulement, toujours visible en bas du résultat
+  // Bouton fin : visible pour tous
   const endBtn=$('end-bottom');
-  if(isAdmin){
-    endBtn.style.display='block';
-    endBtn.classList.remove('hidden');
-  } else {
-    endBtn.style.display='none';
-    endBtn.classList.add('hidden');
-  }
+  if(endBtn){endBtn.style.display='block';endBtn.classList.remove('hidden');}
 }
 
 // ---------------------------------------------------------------- FIRESTORE
@@ -493,6 +541,11 @@ async function doEnd(){
   }
   await sesRef().set({status:'idle',sid:null});
   clearLocal();
+  // Reset variables de cache
+  _lastImagesJson=null;_lastBasketLen=-1;_lastJoined=null;histLoaded=false;
+  // Forcer rechargement de l'historique maintenant
+  const s={status:'idle'};
+  render(s, true);
 }
 
 function openEnd(){modalOpen=true;show($('ov-end'));}
@@ -513,9 +566,11 @@ $('pwd-ok').onclick=()=>{
   if($('pwd-input').value===ADMIN_PASSWORD){
     isAdmin=true;
     modalOpen=false;hide($('ov-pwd'));
-    hide($('admin-login-btn'));
-    show($('admin-logout'));
-    render(session);
+    // Passer au formulaire admin
+    hide($('btn-zone'));
+    show($('admin-form'));
+    show($('admin-badge'));
+    show($('del-all-btn'));
   } else {
     show($('pwd-err'));
   }
@@ -532,6 +587,15 @@ $('n-ok').onclick=async()=>{
   await startDraw(n);
   $('n-input').value='';
 };
+// Admin confirm
+document.addEventListener('click', async e=>{
+  if(e.target.id!=='admin-n-ok') return;
+  const n=parseInt($('admin-n-input').value,10);
+  if(!n||n<2||n>30){show($('admin-n-err'));return;}
+  hide($('admin-n-err'));
+  await startDraw(n);
+  $('admin-n-input').value='';
+});
 
 // ---------------------------------------------------------------- HISTORIQUE
 let histDocs=[];
@@ -647,15 +711,19 @@ async function fetchSession(){
   }
 }
 
-function startPolling(){
+function startPolling(mode){
   if(pollTimer) clearInterval(pollTimer);
+  const interval = mode==='picking' ? 3000 : mode==='idle' ? 30000 : 0;
+  if(!interval) return; // 'done' : on arrête de poller
   pollTimer=setInterval(async()=>{
     if(modalOpen) return;
     try{
       const s=await fetchSession();
+      // Pour 'idle' : ne re-render que si le statut a changé
+      if(mode==='idle' && s.status===session.status) return;
       render(s);
     }catch(e){}
-  },2500);
+  },interval);
 }
 
 async function init(){
@@ -692,8 +760,7 @@ async function init(){
       return;
     }
 
-    render(s);
-    startPolling();
+    render(s, true);
 
   }catch(e){
     screens($('s-err'));
